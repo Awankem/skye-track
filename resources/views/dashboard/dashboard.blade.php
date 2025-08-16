@@ -250,13 +250,14 @@
 
         // Weekly Attendance (Line Chart)
         const weeklyAttendanceCtx = document.getElementById('weeklyAttendanceChart').getContext('2d');
+        const chartData = {!! getWeeklyAttendanceFor4Weeks() !!};
         new Chart(weeklyAttendanceCtx, {
             type: 'line',
             data: {
-                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                labels: chartData.labels,
                 datasets: [{
                     label: 'Weekly Avg. Attendance',
-                    data: [92, 94, 91, 95],
+                    data: chartData.data,
                     borderColor: '#10b981',
                     tension: 0.4,
                     fill: false

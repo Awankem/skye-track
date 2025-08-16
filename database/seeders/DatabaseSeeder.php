@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Attendance;
 use App\Models\Intern;
 use App\Models\User;
+use Carbon\Carbon;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -327,6 +329,64 @@ class DatabaseSeeder extends Seeder
         foreach ($interns as $intern) {
             Intern::create($intern);
         }
+
+
+
+        // Get all intern IDs. Seeder will not run if there are no interns.
+        $internIds = Intern::pluck('id');
+
+        if ($internIds->isEmpty()) {
+            $this->command->info('No interns found. Skipping Attendance seeder.');
+            return;
+        }
+
+        $this->command->info('Seeding attendance records for 4 weeks...');
+
+        // Define the start date. We'll start from 4 weeks ago from today.
+        $startDate = Carbon::now()->subWeeks(4)->startOfWeek(Carbon::TUESDAY);
+
+        // Loop for 4 weeks
+        for ($week = 0; $week < 4; $week++) {
+            // Loop from Tuesday (day 2) to Saturday (day 6)
+            for ($day = 0; $day < 5; $day++) {
+                $currentDate = $startDate->copy()->addWeeks($week)->addDays($day);
+
+                // Seed attendance for each intern on the current day
+                foreach ($internIds as $internId) {
+                    // Randomly decide if an intern is present or absent
+                    $status = (rand(1, 10) > 2) ? 'present' : 'absent'; // 80% chance of being present
+
+                    $signInTime = null;
+                    $signOutTime = null;
+
+                    if ($status === 'present') {
+                        // Generate a random sign-in time between 8:00 AM and 9:30 AM
+                        $signInHour = rand(8, 9);
+                        $signInMinute = ($signInHour == 9) ? rand(0, 30) : rand(0, 59);
+                        $signInTime = $currentDate->copy()->setTime($signInHour, $signInMinute, rand(0, 59));
+
+                        // Generate a random sign-out time between 4:00 PM and 5:30 PM
+                        $signOutHour = rand(16, 17);
+                        $signOutMinute = ($signOutHour == 17) ? rand(0, 30) : rand(0, 59);
+                        $signOutTime = $currentDate->copy()->setTime($signOutHour, $signOutMinute, rand(0, 59));
+                    }
+
+                    Attendance::create([
+                        'intern_id' => $internId,
+                        'status'    => $status,
+                        'date'      => $currentDate->toDateString(),
+                        'sign_in'   => $signInTime,
+                        'sign_out'  => $signOutTime,
+                    ]);
+                }
+            }
+        }
+
+        $this->command->info('Attendance seeding completed successfully.');
+
+
+
+
 
     }
 }

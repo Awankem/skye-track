@@ -7,19 +7,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-
-
-
-Route::get('/scan-devices', function () {
-    $command = "arp -a";  // Ping scan in grepable format
-
-    $output = shell_exec($command);
-
-    return $output;
-});
-
-
-
 Route::get('/dashboard', function () {
     return view('dashboard.dashboard');
 })->name('dashboard');
@@ -27,4 +14,7 @@ Route::get('/dashboard', function () {
 Route::get('/interns', [InternController::class, 'index'])->name('intern.index');
 Route::post('/intern/store',[InternController::class, 'store'])->name('intern.store');
 
-// Route::resource('intern', InternController::class);
+Route::get('/intern/{id}/edit', [InternController::class, 'edit'])->name('intern.edit');
+Route::put('/intern/{id}/update', [InternController::class, 'update'])->name('intern.update');
+
+// Route::resource('/news', InternController::class);

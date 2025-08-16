@@ -256,3 +256,27 @@ function getLateComersByDepartment()
 }
 
     
+
+
+
+
+function getWeeklyAttendanceFor4Weeks(){
+    $attendanceData = [];
+    $today = Carbon::today();
+
+    for ($i = 0; $i < 4; $i++) {
+        $weekStart = $today->copy()->subWeeks($i)->startOfWeek();
+        $weekEnd = $today->copy()->subWeeks($i)->endOfWeek();
+
+        $presentCount = Attendance::where('status', 'present')
+            ->whereBetween('date', [$weekStart, $weekEnd])
+            ->count();
+
+        $attendanceData[] = $presentCount;
+    }
+
+    return json_encode([
+        'labels' => ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        'data' => $attendanceData,
+    ]);
+}
