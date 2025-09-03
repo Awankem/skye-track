@@ -24,7 +24,7 @@ class UpdateInternRequest extends FormRequest
         return [
             'name'=>'max:255|min:5',
             'email'=>'email',
-            'department'=>'exists:interns,department',
+            'departmentEdit'=>'exists:interns,department',
             'mac_address'=>'regex:/^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$/|unique:interns,mac_address'
         ];
     }
@@ -37,7 +37,7 @@ class UpdateInternRequest extends FormRequest
             'name.max'=> 'The name cannot exceed 255 characters',
             'name.min'=> 'The name must be above 5 characters',
             'email.email'=> 'The field must be an email',
-            'department.exists'=>'The department does not exist',
+            'departmentEdit.exists'=>'The department does not exist',
             'mac_address.regex' => 'The MAC address must be in the format XX:XX:XX:XX:XX:XX',
             ];
     }

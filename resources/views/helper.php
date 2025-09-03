@@ -6,6 +6,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 
+
+// Dashboard Data
+
 // number of interns
 function countIntern()
 {
@@ -185,10 +188,8 @@ function getAttendanceIncrease()
     if ($yesterdayCount > 0) {
         $increase = (($todayCount - $yesterdayCount) / $yesterdayCount) * 100;
     } elseif ($todayCount > 0) {
-        // If yesterday had 0 attendance and today has some, it's a 100% increase.
         $increase = 100;
     } else {
-        // If both are 0, there's no change.
         $increase = 0;
     }
 
@@ -279,4 +280,40 @@ function getWeeklyAttendanceFor4Weeks(){
         'labels' => ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
         'data' => $attendanceData,
     ]);
+}
+
+
+
+
+
+// Intern Data
+function totalDays($id){
+    $attendanceCount = Attendance::where('intern_id', $id)
+        ->count();
+    return $attendanceCount;
+}
+
+
+function presentDays($id){
+    $presentCount = Attendance::where('intern_id', $id)
+        ->where('status', 'present')
+        ->count();
+    return $presentCount;
+}
+
+function absentDays($id){
+    $absentCount = Attendance::where('intern_id', $id)
+        ->where('status', 'absent')
+        ->count();
+    return $absentCount;
+}
+
+function calculateDuration($timeIn, $timeOut)
+{
+        if ($timeIn && $timeOut) {
+            $start = Carbon::parse($timeIn);
+            $end = Carbon::parse($timeOut);
+            return round($end->diffInHours($start));
+        }
+        return 0;
 }

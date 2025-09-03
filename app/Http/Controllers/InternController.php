@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\InternsExport;
 use App\Http\Requests\CreateInternRequest;
 use App\Http\Requests\UpdateInternRequest;
+use App\Models\Attendance;
 use App\Models\Intern;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InternController extends Controller
 {
     // index
     public function index(){
-        $interns = Intern::all();
-        return view('intern.intern',['interns'=>$interns]);
+        return view('intern.interns');
+
     }
 
     // store
@@ -22,15 +25,47 @@ class InternController extends Controller
     }
 
     // show individual intern
-    public function show($id){
-        $intern = Intern::findOrFail($id);
-        return view('intern.show', compact('intern'));
+    // public function show($id){
+    //     $intern = Intern::findOrFail($id);
+    //     $attendanceCount = Attendance::where('intern_id', $id)
+    //     ->count();
+    //     $internAttendance = Attendance::where('intern_id', $id)
+    //     ->paginate(10);
+    //     return view('intern.intern', compact('intern','attendanceCount','internAttendance'));
+    // }
+
+    public function show($id, Request $request)
+{
+    $intern = Intern::findOrFail($id);
+
+    $query = Attendance::where('intern_id', $id);
+
+    if ($request->filled('date')) {
+        $query->whereDate('date', $request->date);
     }
+
+    $attendanceCount = Attendance::where('intern_id', $id)
+        ->count();
+
+    $internAttendance = $query->orderBy('date', 'desc')->paginate(10);
+
+    return view('intern.intern', compact('intern', 'attendanceCount', 'internAttendance'));
+}
+//     public function show($id)
+// {
+//     // Find the intern by ID
+//     Intern::findOrFail($id);
+    
+//     // Return the view with the intern ID
+//     return view('intern.intern', ['internId' => $id]);
+// }
+
+    
 
     // edit
     public function edit($id){
         $intern = Intern::findOrFail($id);
-        return view('intern.edit-intern', ['intern' => $intern]);
+        return view('intern.edit-intern', compact('intern'));
     }
 
     // update
@@ -65,5 +100,19 @@ class InternController extends Controller
     // create form
     public function create(){
         return view('intern.create');
+    }
+
+
+
+    // export interns
+     public function export() 
+    {
+        return Excel::download(new InternsExport(), 'interns.csv', \Maatwebsite\Excel\Excel::CSV, ['Content-Type' => 'text/csv']);
+    }
+
+
+     public function exportPdf() 
+    {
+        return Excel::download(new InternsExport(), 'interns.pdf', \Maatwebsite\Excel\Excel::MPDF, ['Content-Type' => 'application/pdf']);
     }
 }

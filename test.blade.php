@@ -1,0 +1,132 @@
+<!-- Topbar -->
+<header class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+    <!-- Search -->
+    <div class="flex-1 flex justify-center">
+        <!-- Quick Search -->
+        <div class="mr-4 relative" 
+             x-data="{ open: false, search: '', results: [] }" 
+             @click.away="open = false">
+            <div class="relative">
+                <input type="text" 
+                       x-model="search" 
+                       @input="
+                            if (search.length > 0) {
+                                open = true;
+                                const routes = [
+                                    { name: 'Dashboard', url: '{{ route('dashboard') }}', icon: 'fas fa-tachometer-alt', description: 'Main dashboard' },
+                                    { name: 'Interns', url: '{{ route('intern.index') }}', icon: 'fas fa-users', description: 'Manage interns' },
+                                    { name: 'Reports', url: '#', icon: 'fas fa-file-alt', description: 'View reports' },
+                                    { name: 'Settings', url: '#', icon: 'fas fa-cog', description: 'Application settings' }
+                                ];
+                                results = routes.filter(route =>
+                                    route.name.toLowerCase().includes(search.toLowerCase()) ||
+                                    route.description.toLowerCase().includes(search.toLowerCase())
+                                ).slice(0, 8);
+                            } else {
+                                open = false;
+                                results = [];
+                            }
+                        " 
+                       @keydown.escape="open = false" 
+                       @focus="if (search.length > 0) open = true"
+                       placeholder="Search pages and features..."
+                       class="w-80 px-4 py-2.5 pl-11 text-sm font-medium border-2 border-slate-200/60 rounded-xl bg-white/95 backdrop-blur-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 hover:border-slate-300 transition-all duration-300 shadow-sm hover:shadow-md">
+
+                <!-- Clear Button -->
+                <div x-show="search.length > 0" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <button @click="search = ''; open = false; results = []"
+                        class="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all duration-200">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Results Dropdown -->
+            <div x-show="open && (results.length > 0 || search.length > 0)"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 translate-y-1"
+                x-transition:enter-end="opacity-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 translate-y-0"
+                x-transition:leave-end="opacity-0 translate-y-1"
+                class="absolute left-0 top-full mt-2 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 max-h-96 overflow-y-auto"
+                style="z-index: 999999 !important;">
+
+                <div class="py-2" x-show="results.length > 0">
+                    <template x-for="result in results" :key="result.url">
+                        <a :href="result.url"
+                            class="flex items-center px-4 py-3 hover:bg-blue-50 transition-colors duration-150 group border-b border-gray-50 last:border-b-0"
+                            @click="open = false; search = ''">
+                            <div
+                                class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors duration-150">
+                                <i :class="result.icon + ' text-blue-600 text-sm'"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <div class="text-sm font-medium text-gray-900" x-text="result.name"></div>
+                                <div class="text-xs text-gray-500" x-text="result.description"></div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-arrow-right text-gray-400 text-xs group-hover:text-blue-600 transition-colors duration-150"></i>
+                            </div>
+                        </a>
+                    </template>
+                </div>
+
+                <!-- No Results -->
+                <div x-show="search.length > 0 && results.length === 0" class="px-4 py-6 text-center">
+                    <div class="text-gray-400 mb-2">
+                        <i class="fas fa-search text-2xl"></i>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        No results found for "<span x-text="search" class="font-medium"></span>"
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</header>
+<!-- 
+This Blade template defines a topbar header with a search functionality using Alpine.js for interactivity. Here's a breakdown:
+
+1. **Header Section**:
+   - The `<header>` element serves as the topbar, styled with Tailwind CSS classes for layout, spacing, and appearance.
+
+2. **Search Container**:
+   - A `<div>` with `x-data` initializes Alpine.js reactive data:
+     - `open`: Tracks whether the search dropdown is visible.
+     - `search`: Stores the current search input.
+     - `results`: Holds the filtered search results.
+
+3. **Search Input**:
+   - The `<input>` field is bound to `search` using `x-model`.
+   - Event listeners:
+     - `@input`: Filters the `routes` array based on the search query and updates `results`.
+     - `@keydown.escape`: Closes the dropdown when the Escape key is pressed.
+     - `@focus`: Opens the dropdown if there is a search query.
+
+4. **Clear Button**:
+   - A button appears when `search` has content, allowing users to clear the input and reset the dropdown.
+
+5. **Search Results Dropdown**:
+   - A dropdown appears when `open` is true and there are results or a search query.
+   - Uses `x-transition` for smooth animations when showing/hiding.
+   - Results are displayed using a `template` with `x-for` to loop through the `results` array.
+     - Each result includes an icon, name, description, and a link to the corresponding page.
+   - Clicking a result clears the search and closes the dropdown.
+
+6. **No Results Message**:
+   - If there is a search query but no matching results, a "No results found" message is displayed.
+
+7. **Routes Array**:
+   - A hardcoded array of routes is defined in the `@input` event. Each route has:
+     - `name`: The name of the page.
+     - `url`: The URL of the page.
+     - `icon`: A Font Awesome icon class.
+     - `description`: A brief description of the page.
+
+8. **Styling**:
+   - Tailwind CSS is used extensively for layout, spacing, borders, shadows, transitions, and hover effects.
+   - The dropdown is styled to appear as a floating panel with a high `z-index` to ensure it overlays other elements.
+
+This code provides a responsive and interactive search feature for navigating pages or features within

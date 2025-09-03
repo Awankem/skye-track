@@ -79,7 +79,7 @@
                                         Save
                                     </button>
                                     <button type="button" command="close" commandfor="add-intern-dialog"
-                                        class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                                        class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">
                                         Cancel
                                     </button>
                                 </div>
