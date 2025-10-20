@@ -56,7 +56,7 @@
             </div>
         </div>
         {{-- Table Data --}}
-        <div class="px-4 py-3 @container">
+        <div class="px-4 py-3 @container" wire:loading.class="opacity-50">
             <div class="flex overflow-hidden rounded-xl border border-[#dde0e4] bg-white">
                 <table class="flex-1 border-none overflow-hidden">
                     <thead>

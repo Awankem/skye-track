@@ -25,40 +25,11 @@ class InternController extends Controller
     }
 
     // show individual intern
-    // public function show($id){
-    //     $intern = Intern::findOrFail($id);
-    //     $attendanceCount = Attendance::where('intern_id', $id)
-    //     ->count();
-    //     $internAttendance = Attendance::where('intern_id', $id)
-    //     ->paginate(10);
-    //     return view('intern.intern', compact('intern','attendanceCount','internAttendance'));
-    // }
-
-    public function show($id, Request $request)
-{
-    $intern = Intern::findOrFail($id);
-
-    $query = Attendance::where('intern_id', $id);
-
-    if ($request->filled('date')) {
-        $query->whereDate('date', $request->date);
+    public function show($id)
+    {
+        $intern = Intern::findOrFail($id);
+        return view('intern.intern', compact('intern'));
     }
-
-    $attendanceCount = Attendance::where('intern_id', $id)
-        ->count();
-
-    $internAttendance = $query->orderBy('date', 'desc')->paginate(10);
-
-    return view('intern.intern', compact('intern', 'attendanceCount', 'internAttendance'));
-}
-//     public function show($id)
-// {
-//     // Find the intern by ID
-//     Intern::findOrFail($id);
-    
-//     // Return the view with the intern ID
-//     return view('intern.intern', ['internId' => $id]);
-// }
 
     
 
