@@ -25,11 +25,15 @@ class SearchIntern extends Component
     public function updatedSearch()
     {
         $this->resetPage();
+        $this->showEditModal = false;
+        $this->confirmingInternDeletion = false;
     }
 
     public function updatedDepartment()
     {
         $this->resetPage();
+        $this->showEditModal = false;
+        $this->confirmingInternDeletion = false;
     }
 
     // === DELETE ===
