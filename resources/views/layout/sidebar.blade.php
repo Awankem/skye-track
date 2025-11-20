@@ -43,11 +43,21 @@
     {{-- Profile --}}
     <div class="flex items-center gap-3 ml-2 justify-start border-t border-gray-200 px-4 py-6">
         <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-            <span class="font-medium text-gray-600 dark:text-gray-300">A</span>
+            <span class="font-medium text-gray-600 dark:text-gray-300">
+                @php
+                    $name = Auth::user()->name;
+                    $words = explode(' ', $name);
+                    $initials = '';
+                    foreach ($words as $word) {
+                        $initials .= strtoupper(substr($word, 0, 1));
+                    }
+                    echo $initials;
+                @endphp
+            </span>
         </div>
 
         <div>
-            <p class="text-gray-900 font-semibold text-xl">Admin</p>
+            <p class="text-gray-900 font-semibold text-xl">{{ Auth::user()->name }}</p>
         </div>
     </div>
 </aside>

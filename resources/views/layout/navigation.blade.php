@@ -1,7 +1,7 @@
 {{-- Topbar --}}
 <header class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
     {{-- Search --}}
-    <div class="flex-1 flex justify-center">
+    <div class="flex-1 flex justify-start">
         {{-- Quick Search --}}
         <div class="mr-4 relative" 
              x-data="{ open: false, search: '', results: [] }" 
@@ -30,7 +30,7 @@
                        @keydown.escape="open = false" 
                        @focus="if (search.length > 0) open = true"
                        placeholder="Search pages and features..."
-                       class="w-80 px-4 py-2.5 pl-11 text-sm font-medium border-2 border-slate-200/60 rounded-xl bg-white/95 backdrop-blur-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 hover:border-slate-300 transition-all duration-300 shadow-sm hover:shadow-md">
+                       class="w-96 px-4 py-3 pl-12 text-base font-medium border-2 border-slate-200/60 rounded-xl bg-white/95 backdrop-blur-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 hover:border-slate-300 transition-all duration-300 shadow-sm hover:shadow-md">
 
                 {{-- Clear Button --}}
                 <div x-show="search.length > 0" class="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -86,61 +86,50 @@
     </div>
 
     {{-- Profile --}}
-    <div class="flex items-center gap-3">
-        <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-            <span class="font-medium text-gray-600 dark:text-gray-300">A</span>
-        </div>
+    {{-- Profile Dropdown --}}
+    <div x-data="{ open: false }" class="relative">
+        {{-- Trigger --}}
+        <button @click="open = !open" class="flex items-center gap-3 focus:outline-none">
+            <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
+                <span class="font-medium text-gray-600 dark:text-gray-300">
+                    @php
+                        $name = Auth::user()->name;
+                        $words = explode(' ', $name);
+                        $initials = '';
+                        foreach ($words as $word) {
+                            $initials .= strtoupper(substr($word, 0, 1));
+                        }
+                        echo $initials;
+                    @endphp
+                </span>
+            </div>
+            <div>
+                <p class="text-gray-900 font-semibold text-xl">{{ Auth::user()->name }}</p>
+            </div>
+            {{-- Dropdown Arrow --}}
+            <svg class="w-4 h-4 text-gray-500 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </button>
 
-        <div>
-            <p class="text-gray-900 font-semibold text-xl">Admin</p>
+        {{-- Dropdown Menu --}}
+        <div x-show="open"
+             @click.away="open = false"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 translate-y-1"
+             class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50"
+             style="display: none;">
+            {{-- Removed Profile and Settings links --}}
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                    Logout
+                </button>
+            </form>
         </div>
     </div>
 </header>
-
-
-
-{{-- 
-This Blade template defines a topbar header with a search functionality using Alpine.js for interactivity. Here's a breakdown:
-
-1. **Header Section**:
-   - The `<header>` element serves as the topbar, styled with Tailwind CSS classes for layout, spacing, and appearance.
-
-2. **Search Container**:
-   - A `<div>` with `x-data` initializes Alpine.js reactive data:
-     - `open`: Tracks whether the search dropdown is visible.
-     - `search`: Stores the current search input.
-     - `results`: Holds the filtered search results.
-
-3. **Search Input**:
-   - The `<input>` field is bound to `search` using `x-model`.
-   - Event listeners:
-     - `@input`: Filters the `routes` array based on the search query and updates `results`.
-     - `@keydown.escape`: Closes the dropdown when the Escape key is pressed.
-     - `@focus`: Opens the dropdown if there is a search query.
-
-4. **Clear Button**:
-   - A button appears when `search` has content, allowing users to clear the input and reset the dropdown.
-
-5. **Search Results Dropdown**:
-   - A dropdown appears when `open` is true and there are results or a search query.
-   - Uses `x-transition` for smooth animations when showing/hiding.
-   - Results are displayed using a `template` with `x-for` to loop through the `results` array.
-     - Each result includes an icon, name, description, and a link to the corresponding page.
-   - Clicking a result clears the search and closes the dropdown.
-
-6. **No Results Message**:
-   - If there is a search query but no matching results, a "No results found" message is displayed.
-
-7. **Routes Array**:
-   - A hardcoded array of routes is defined in the `@input` event. Each route has:
-     - `name`: The name of the page.
-     - `url`: The URL of the page.
-     - `icon`: A Font Awesome icon class.
-     - `description`: A brief description of the page.
-
-8. **Styling**:
-   - Tailwind CSS is used extensively for layout, spacing, borders, shadows, transitions, and hover effects.
-   - The dropdown is styled to appear as a floating panel with a high `z-index` to ensure it overlays other elements.
-
-This code provides a responsive and interactive search feature for navigating pages or features within the application.
---}}
