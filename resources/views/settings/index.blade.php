@@ -16,17 +16,11 @@
             </div>
         </div>
 
-        @if(session('success'))
-        <div class="mx-4 mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-            <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
+        <!-- Session Status -->
+        <div class="px-4">
+            <x-session-status :status="session('success') ?? session('info')" />
         </div>
-        @endif
 
-        @if(session('info'))
-        <div class="mx-4 mb-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded-lg">
-            <i class="fas fa-info-circle mr-2"></i>{{ session('info') }}
-        </div>
-        @endif
 
         <!-- System Statistics -->
         <div class="flex flex-wrap gap-4 p-4">

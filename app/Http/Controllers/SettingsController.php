@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Intern;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -11,11 +12,12 @@ class SettingsController extends Controller
 {
     public function index()
     {
-        // Get current settings from cache or config
-        $workingHoursStart = Cache::get('working_hours_start', '09:00');
-        $workingHoursEnd = Cache::get('working_hours_end', '17:00');
-        $lateThreshold = Cache::get('late_threshold', '09:00');
-        $workingDays = Cache::get('working_days', ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);
+        // Get current settings from the database via the setting() helper
+        $workingHoursStart = setting('working_hours_start', '09:00');
+        $workingHoursEnd = setting('working_hours_end', '17:00');
+        $lateThreshold = setting('late_threshold', '09:00');
+        $workingDays = setting('working_days', ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);
+        
         
         // Get all departments
         $departments = Intern::select('department')->distinct()->pluck('department')->sort()->values();
@@ -45,13 +47,18 @@ class SettingsController extends Controller
             $request->validate([
                 'late_threshold' => 'required|date_format:H:i',
             ]);
-            
-            Cache::put('late_threshold', $request->late_threshold, now()->addYears(1));
-            
+
+            Setting::updateOrCreate(
+                ['key' => 'late_threshold'],
+                ['value' => $request->late_threshold]
+            );
+
+            Cache::forget('setting.late_threshold');
+
             return redirect()->route('settings.index')
                 ->with('success', 'Late arrival threshold updated to ' . $request->late_threshold . '! All reports and dashboards will use this new threshold immediately.');
         }
-        
+
         // Full settings update
         $request->validate([
             'working_hours_start' => 'required|date_format:H:i',
@@ -61,11 +68,18 @@ class SettingsController extends Controller
             'working_days.*' => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
         ]);
 
-        // Store settings in cache (in production, you'd use database)
-        Cache::put('working_hours_start', $request->working_hours_start, now()->addYears(1));
-        Cache::put('working_hours_end', $request->working_hours_end, now()->addYears(1));
-        Cache::put('late_threshold', $request->late_threshold, now()->addYears(1));
-        Cache::put('working_days', $request->working_days, now()->addYears(1));
+        // Store settings in the database
+        $settings = [
+            'working_hours_start' => $request->working_hours_start,
+            'working_hours_end' => $request->working_hours_end,
+            'late_threshold' => $request->late_threshold,
+            'working_days' => $request->working_days,
+        ];
+
+        foreach ($settings as $key => $value) {
+            Setting::updateOrCreate(['key' => $key], ['value' => is_array($value) ? json_encode($value) : $value]);
+            Cache::forget('setting.' . $key);
+        }
 
         $message = 'Settings updated successfully! ';
         if ($request->has('late_threshold')) {

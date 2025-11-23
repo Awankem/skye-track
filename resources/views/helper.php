@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
 // Helper function to get late threshold time
 function getLateThreshold()
 {
-    $threshold = Cache::get('late_threshold', '09:00');
+    $threshold = setting('late_threshold', '09:00');
     $time = explode(':', $threshold);
     return ['hour' => (int)$time[0], 'minute' => (int)$time[1]];
 }
@@ -21,7 +21,7 @@ function getLateThreshold()
 // Helper function to get working days
 function getWorkingDays()
 {
-    return Cache::get('working_days', ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);
+    return setting('working_days', ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);
 }
 
 // number of interns

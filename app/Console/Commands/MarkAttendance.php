@@ -7,8 +7,6 @@ use App\Models\Intern;
 use App\Models\ScannedDevices;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class MarkAttendance extends Command
 {
@@ -35,7 +33,7 @@ class MarkAttendance extends Command
         $today = now('Africa/Lagos');
         
         // Get working days from settings
-        $workingDays = Cache::get('working_days', ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);
+        $workingDays = setting('working_days', ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);
         $dayName = strtolower($today->format('l'));
         
         if (!in_array($dayName, $workingDays)) {
@@ -44,8 +42,8 @@ class MarkAttendance extends Command
         }
 
         // Get working hours from settings
-        $workingHoursStart = Cache::get('working_hours_start', '09:00');
-        $workingHoursEnd = Cache::get('working_hours_end', '17:00');
+        $workingHoursStart = setting('working_hours_start', '09:00');
+        $workingHoursEnd = setting('working_hours_end', '17:00');
         
         $startParts = explode(':', $workingHoursStart);
         $endParts = explode(':', $workingHoursEnd);
