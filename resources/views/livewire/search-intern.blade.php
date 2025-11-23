@@ -7,7 +7,7 @@
             <p class="text-[#121417] tracking-light text-[32px] font-bold leading-tight min-w-72">Interns</p>
             <button
                 class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-8 px-4 bg-blue-599 text-[#121417] text-sm font-medium leading-normal bg-blue-500"
-                command="show-modal" commandfor="add-intern-dialog">
+                @click="$dispatch('open-add-intern-modal')">
                 <span class="truncate">Add Intern</span>
             </button>
         </div>
@@ -193,54 +193,186 @@
 
 
     {{-- Edit Modal --}}
-        @if ($showEditModal)
-            <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                <div class="bg-white p-6 rounded-lg w-1/3">
-                    <h2 class="text-2xl font-bold mb-4">Edit Intern</h2>
-                    <form wire:submit.prevent="updateIntern">
-                        <div class="mb-3">
-                            <label>Name</label>
-                            <input type="text" wire:model="name" class="border rounded w-full px-3 py-2">
-                            @error('name') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-                        </div>
-                        <div class="mb-3">
-                            <label>Email</label>
-                            <input type="email" wire:model="email" class="border rounded w-full px-3 py-2">
-                            @error('email') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-                        </div>
-                        <div class="mb-3">
-                            <label>MAC Address</label>
-                            <input type="text" wire:model="mac_address" class="border rounded w-full px-3 py-2">
-                            @error('mac_address') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-                        </div>
-                        <div class="mb-3">
-                            <label for="department" class="text-sm font-medium text-gray-700">
-                                Department
-                            </label>
-                            <select id="department" name="department" wire:model="departmentEdit"
-                                class="mt-2 w-full rounded-md border-gray-300 shadow-sm focus:border-[#3971c5] focus:ring-[#3971c5] sm:text-sm">
-                                @foreach (getDistinctDepartments() as $department)
-                                <option value="{{ $department }}" @if(old('department')==$department) selected
-                                    @endif>
-                                    {{ $department }}
-                                </option>
-                                @endforeach
-                            </select>
-                            @error('department')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div class="flex justify-end space-x-2">
-                            <button type="button" wire:click="$set('showEditModal', false)"
-                                class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">Cancel</button>
-                            <button type="submit" wire:click="updateIntern"
-                                class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Update</button>
-                        </div>
-                    </form>
+    @if ($showEditModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-3xl shadow-2xl p-10 max-w-4xl w-full mx-6 transform">
+            
+            <!-- Header -->
+            <div class="relative mb-8 pb-6 border-b-2 border-gray-100">
+                <button type="button" 
+                    wire:click="$set('showEditModal', false)"
+                    class="absolute -right-2 -top-2 w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-all duration-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                
+                <div class="flex items-center gap-5">
+                    <div class="w-16 h-16 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-900 text-3xl">Edit Intern</h3>
+                        <p class="text-gray-500 text-base mt-1">Update the intern's information below</p>
+                    </div>
                 </div>
             </div>
-        @endif
+            
+            <!-- Form -->
+            <form wire:submit.prevent="updateIntern" class="space-y-6">
+                
+                <!-- Two Column Layout for Name and Email -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Name -->
+                    <div class="group">
+                        <label for="edit-name" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Full Name <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="edit-name"
+                                wire:model="name" 
+                                placeholder="e.g., John Doe"
+                                class="block w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 text-base">
+                        </div>
+                        @error('name') 
+                            <p class="text-red-600 text-sm mt-2 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+                    
+                    <!-- Email -->
+                    <div class="group">
+                        <label for="edit-email" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Email Address <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <input 
+                                type="email" 
+                                id="edit-email"
+                                wire:model="email" 
+                                placeholder="e.g., john.doe@company.com"
+                                class="block w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 text-base">
+                        </div>
+                        @error('email') 
+                            <p class="text-red-600 text-sm mt-2 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+                </div>
+                
+                <!-- Two Column Layout for Department and MAC Address -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Department -->
+                    <div class="group">
+                        <label for="edit-department" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Department <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                            </div>
+                            <select 
+                                id="edit-department" 
+                                wire:model="departmentEdit"
+                                class="block w-full pl-12 pr-12 py-3.5 border-2 border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 text-base appearance-none bg-white cursor-pointer">
+                                <option value="">Select a department</option>
+                                @foreach (getDistinctDepartments() as $department)
+                                    <option value="{{ $department }}" @if(old('department')==$department) selected @endif>
+                                        {{ $department }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                        @error('department')
+                            <p class="text-red-600 text-sm mt-2 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+
+                    <!-- MAC Address -->
+                    <div class="group">
+                        <label for="edit-mac" class="block text-sm font-semibold text-gray-700 mb-2">
+                            MAC Address
+                            <span class="text-gray-400 text-xs font-normal ml-1">(Optional)</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                                </svg>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="edit-mac"
+                                wire:model="mac_address" 
+                                placeholder="e.g., 00:1B:44:11:3A:B7"
+                                class="block w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 text-base">
+                        </div>
+                        @error('mac_address') 
+                            <p class="text-red-600 text-sm mt-2 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-4 mt-10 pt-8 border-t-2 border-gray-100">
+                    <button 
+                        type="button" 
+                        wire:click="$set('showEditModal', false)"
+                        class="px-8 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-all duration-200 text-base">
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit"
+                        class="px-8 py-3 bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-[1.02] transition-all duration-200 text-base inline-flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Update Intern
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endif
 
 
 

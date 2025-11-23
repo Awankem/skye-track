@@ -2,5 +2,5 @@
 @section('title', 'Intern')
 @section('content')
     @livewire('search-intern')
-    @extends('modals.add_intern') 
+    @include('intern.add-intern-modal')
 @endsection

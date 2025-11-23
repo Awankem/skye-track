@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\InternController;
+use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,4 +36,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('interns/export', [InternController::class, 'export'])->name('interns.export');
     Route::get('interns/export/pdf', [InternController::class, 'exportPdf'])->name('interns.export.pdf');
     Route::get('intern/{id}/attendance/export', [AttendanceController::class, 'export'])->name('intern.attendance.export');
+
+    // Reports Routes
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+
+    // Settings Routes
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
 });

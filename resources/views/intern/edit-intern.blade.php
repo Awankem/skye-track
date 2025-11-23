@@ -1,4 +1,4 @@
-@extends('layout.app')
+{{-- @extends('layout.app')
 @section('title', 'Edit Intern')
 @section('content')
 <div class="relative flex size-full min-h-screen flex-col bg-white group/design-root overflow-x-hidden" style='font-family: Inter, "Noto Sans", sans-serif;'>
@@ -126,4 +126,4 @@
     </div>
   </div>
 </div>
-@endsection
+@endsection --}}

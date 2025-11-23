@@ -36,6 +36,8 @@ class SearchIntern extends Component
         $this->confirmingInternDeletion = false;
     }
 
+
+
     // === DELETE ===
     public function confirmDelete($id)
     {

@@ -5,6 +5,11 @@
           <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
             <div class="flex flex-col justify-between gap-3 p-4">
               <div class="flex min-w-72 flex-col gap-3">
+                {{-- Back Button --}}
+                <a href="{{ route('intern.index') }}" class="text-blue-600 hover:text-blue-800 flex items-center gap-1 mb-2">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Interns
+                </a>
                 <p class="text-[#111418] tracking-light text-[32px] font-bold leading-tight">Intern Profile</p>
                 <p class="text-[#617589] text-sm font-normal leading-normal">View and manage intern attendance records.</p>
               </div>

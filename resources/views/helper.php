@@ -4,10 +4,25 @@ use App\Models\Attendance;
 use App\Models\Intern;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 
 
 // Dashboard Data
+
+// Helper function to get late threshold time
+function getLateThreshold()
+{
+    $threshold = Cache::get('late_threshold', '09:00');
+    $time = explode(':', $threshold);
+    return ['hour' => (int)$time[0], 'minute' => (int)$time[1]];
+}
+
+// Helper function to get working days
+function getWorkingDays()
+{
+    return Cache::get('working_days', ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']);
+}
 
 // number of interns
 function countIntern()
@@ -75,6 +90,21 @@ function averageDailyAttendance()
 
 function getDailyAttendanceTrendData()
 {
+    $workingDays = getWorkingDays();
+    $dayMap = [
+        'monday' => Carbon::MONDAY,
+        'tuesday' => Carbon::TUESDAY,
+        'wednesday' => Carbon::WEDNESDAY,
+        'thursday' => Carbon::THURSDAY,
+        'friday' => Carbon::FRIDAY,
+        'saturday' => Carbon::SATURDAY,
+        'sunday' => Carbon::SUNDAY,
+    ];
+    $workingDayNumbers = array_map(function($day) use ($dayMap) {
+        return $dayMap[strtolower($day)] ?? null;
+    }, $workingDays);
+    $workingDayNumbers = array_filter($workingDayNumbers);
+
     $attendanceByDay = Attendance::where('status', 'present')
         ->where('date', '>=', Carbon::now()->subDays(6))
         ->select(DB::raw('DATE(date) as attendance_date'), DB::raw('count(*) as present_count'))
@@ -85,7 +115,8 @@ function getDailyAttendanceTrendData()
     $chartData = [];
     for ($i = 6; $i >= 0; $i--) {
         $date = Carbon::now()->subDays($i);
-        if ($date->isMonday() || $date->isSunday()) {
+        // Only include working days
+        if (!in_array($date->dayOfWeek, $workingDayNumbers)) {
             continue;
         }
         $dateString = $date->format('Y-m-d');
@@ -161,24 +192,44 @@ function getTodayDepartmentalChartData()
 function getAttendanceIncrease()
 {
     $today = Carbon::today();
+    $workingDays = getWorkingDays();
+    
+    $dayMap = [
+        'monday' => Carbon::MONDAY,
+        'tuesday' => Carbon::TUESDAY,
+        'wednesday' => Carbon::WEDNESDAY,
+        'thursday' => Carbon::THURSDAY,
+        'friday' => Carbon::FRIDAY,
+        'saturday' => Carbon::SATURDAY,
+        'sunday' => Carbon::SUNDAY,
+    ];
+    $workingDayNumbers = array_map(function($day) use ($dayMap) {
+        return $dayMap[strtolower($day)] ?? null;
+    }, $workingDays);
+    $workingDayNumbers = array_filter($workingDayNumbers);
 
-    // Only calculate for Tuesday to Saturday, as Sunday and Monday are non-working days.
-    if ($today->isSunday() || $today->isMonday()) {
-        return 0;
+    // Only calculate if today is a working day
+    if (!in_array($today->dayOfWeek, $workingDayNumbers)) {
+        return '0%';
     }
 
     $todayCount = Attendance::where('status', 'present')
         ->whereDate('date', $today)
         ->count();
 
-    // Determine the date of the previous working day for comparison.
-    $previousWorkingDay = $today->copy();
-    if ($today->isTuesday()) {
-        // If today is Tuesday, the last working day was Saturday.
-        $previousWorkingDay->subDays(3);
-    } else {
-        // For Wed, Thu, Fri, Sat, the last working day is simply the day before.
+    // Find the previous working day
+    $previousWorkingDay = $today->copy()->subDay();
+    $maxDaysBack = 7; // Safety limit
+    $daysBack = 0;
+    
+    while ($daysBack < $maxDaysBack && !in_array($previousWorkingDay->dayOfWeek, $workingDayNumbers)) {
         $previousWorkingDay->subDay();
+        $daysBack++;
+    }
+
+    // If we couldn't find a previous working day, return 0
+    if ($daysBack >= $maxDaysBack || !in_array($previousWorkingDay->dayOfWeek, $workingDayNumbers)) {
+        return $todayCount > 0 ? '+100%' : '0%';
     }
 
     $yesterdayCount = Attendance::where('status', 'present')
@@ -196,7 +247,7 @@ function getAttendanceIncrease()
     if (round($increase) > 0) {
         return '+' . round($increase) . '%';
     } elseif (round($increase) < 0) {
-        return '-' . round($increase) . '%';
+        return round($increase) . '%'; // Negative already has minus sign
     } else {
         return round($increase) . '%';
     }
@@ -211,12 +262,21 @@ function getPresentAbsentLateData()
 
     $totalInterns = countIntern();
 
-    $todaysAttendance = Attendance::whereDate('created_at', $today)->get();
+    // Get today's attendance using the date field, not created_at
+    $todaysAttendance = Attendance::whereDate('date', $today)->get();
 
     $presentCount = $todaysAttendance->where('status', 'present')->count();
 
+    $threshold = getLateThreshold();
     $lateCount = $todaysAttendance->where('status', 'present')
-        ->where('sign_in', '>', $today->copy()->setTime(9, 0, 0))
+        ->filter(function ($attendance) use ($today, $threshold) {
+            if (!$attendance->sign_in) {
+                return false;
+            }
+            $signInTime = Carbon::parse($attendance->sign_in);
+            $thresholdTime = $today->copy()->setTime($threshold['hour'], $threshold['minute'], 0);
+            return $signInTime->gt($thresholdTime);
+        })
         ->count();
 
     $absentCount = $totalInterns - $presentCount;
@@ -234,15 +294,24 @@ function getPresentAbsentLateData()
 function getLateComersByDepartment()
 {
     $today = Carbon::today();
+    $threshold = getLateThreshold();
+    $thresholdTime = $today->copy()->setTime($threshold['hour'], $threshold['minute'], 0);
 
     $departments = Intern::select('department')->distinct()->pluck('department');
     $chartData = [];
     foreach ($departments as $department) {
         $lateCount = Attendance::where('status', 'present')
             ->whereDate('date', $today)
-            ->where('sign_in', '>', $today->copy()->setTime(9, 0, 0))
             ->whereHas('intern', function ($query) use ($department) {
                 $query->where('department', $department);
+            })
+            ->get()
+            ->filter(function ($attendance) use ($thresholdTime) {
+                if (!$attendance->sign_in) {
+                    return false;
+                }
+                $signInTime = Carbon::parse($attendance->sign_in);
+                return $signInTime->gt($thresholdTime);
             })
             ->count();
 
@@ -264,21 +333,51 @@ function getLateComersByDepartment()
 function getWeeklyAttendanceFor4Weeks(){
     $attendanceData = [];
     $today = Carbon::today();
+    $totalInterns = countIntern();
+    $workingDays = getWorkingDays();
+    
+    $dayMap = [
+        'monday' => Carbon::MONDAY,
+        'tuesday' => Carbon::TUESDAY,
+        'wednesday' => Carbon::WEDNESDAY,
+        'thursday' => Carbon::THURSDAY,
+        'friday' => Carbon::FRIDAY,
+        'saturday' => Carbon::SATURDAY,
+        'sunday' => Carbon::SUNDAY,
+    ];
+    $workingDayNumbers = array_map(function($day) use ($dayMap) {
+        return $dayMap[strtolower($day)] ?? null;
+    }, $workingDays);
+    $workingDayNumbers = array_filter($workingDayNumbers);
 
     for ($i = 0; $i < 4; $i++) {
         $weekStart = $today->copy()->subWeeks($i)->startOfWeek();
         $weekEnd = $today->copy()->subWeeks($i)->endOfWeek();
 
+        // Count working days in the week
+        $workingDaysInWeek = 0;
+        $currentDay = $weekStart->copy();
+        while ($currentDay->lte($weekEnd)) {
+            if (in_array($currentDay->dayOfWeek, $workingDayNumbers)) {
+                $workingDaysInWeek++;
+            }
+            $currentDay->addDay();
+        }
+
         $presentCount = Attendance::where('status', 'present')
             ->whereBetween('date', [$weekStart, $weekEnd])
             ->count();
 
-        $attendanceData[] = $presentCount;
+        // Calculate percentage: (present days) / (total interns * working days in week) * 100
+        $expectedDays = $totalInterns * $workingDaysInWeek;
+        $percentage = $expectedDays > 0 ? round(($presentCount / $expectedDays) * 100, 1) : 0;
+        
+        $attendanceData[] = $percentage;
     }
 
     return json_encode([
         'labels' => ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-        'data' => $attendanceData,
+        'data' => array_reverse($attendanceData), // Reverse to show oldest week first
     ]);
 }
 
