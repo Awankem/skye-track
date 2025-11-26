@@ -11,28 +11,28 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Install dependencies
+# Copy composer files first
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
-# Copy code
+# Install dependencies with verbose output
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --optimize-autoloader
+
+# Copy application code
 COPY . .
 
+# Generate optimized autoloader after all files are in place
+RUN composer dump-autoload --optimize --classmap-authoritative
+
 # Create SQLite database + run migrations/seeds
-RUN mkdir -p database \
+RUN mkdir -p database storage/framework/sessions storage/framework/views storage/framework/cache \
     && touch database/database.sqlite \
-    && chown www-data:www-data database/database.sqlite \
-    && chmod 664 database/database.sqlite \
+    && chown -R www-data:www-data database storage bootstrap/cache \
+    && chmod -R 775 database storage bootstrap/cache \
     && php artisan migrate --force \
     && php artisan db:seed --force || true
 
 # Laravel optimization
-RUN composer dump-autoload --optimize --classmap-authoritative
 RUN php artisan config:cache && php artisan route:cache && php artisan view:cache
-
-# Permissions
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
-    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
 # Copy nginx config
 COPY docker/nginx/nginx.conf /etc/nginx/http.d/default.conf
