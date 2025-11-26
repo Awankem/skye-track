@@ -24,7 +24,7 @@ COPY . .
 RUN composer dump-autoload --optimize --classmap-authoritative
 
 # Create SQLite database + run migrations/seeds
-RUN mkdir -p database storage/framework/sessions storage/framework/views storage/framework/cache \
+RUN mkdir -p database storage/framework/sessions storage/framework/views storage/framework/cache storage/logs \
     && touch database/database.sqlite \
     && chown -R www-data:www-data database storage bootstrap/cache \
     && chmod -R 775 database storage bootstrap/cache \
@@ -37,8 +37,14 @@ RUN php artisan config:cache && php artisan route:cache && php artisan view:cach
 # Copy nginx config
 COPY docker/nginx/nginx.conf /etc/nginx/http.d/default.conf
 
+# Enable PHP error logging
+RUN echo "php_admin_value[error_log] = /var/www/storage/logs/php-fpm-error.log" >> /usr/local/etc/php-fpm.d/www.conf \
+    && echo "php_admin_flag[log_errors] = on" >> /usr/local/etc/php-fpm.d/www.conf \
+    && echo "catch_workers_output = yes" >> /usr/local/etc/php-fpm.d/www.conf
+
 # Render uses PORT environment variable (default 10000)
 EXPOSE 10000
 
 # Start PHP-FPM in background and Nginx in foreground with port substitution
-CMD ["/bin/sh", "-c", "sed -i \"s/listen 80/listen ${PORT:-10000}/g\" /etc/nginx/http.d/default.conf && php-fpm & nginx -g 'daemon off;'"]
+# Also tail the Laravel log so errors appear in Render logs
+CMD ["/bin/sh", "-c", "sed -i \"s/listen 80/listen ${PORT:-10000}/g\" /etc/nginx/http.d/default.conf && php-fpm & tail -f /var/www/storage/logs/laravel.log /var/www/storage/logs/php-fpm-error.log 2>/dev/null & nginx -g 'daemon off;'"]
