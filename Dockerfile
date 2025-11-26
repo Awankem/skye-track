@@ -15,6 +15,10 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd zip pdo pdo_mysql
 
+# Install Node.js and npm
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+
 # Copy the composer.lock and composer.json files
 COPY composer.lock composer.json ./
 
@@ -32,6 +36,6 @@ RUN composer dump-autoload --optimize
 
 # Expose the port
 EXPOSE 9000
-
+EXPOSE 80
 # Start PHP-FPM server
 CMD ["php-fpm"]
