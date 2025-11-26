@@ -12,9 +12,8 @@ services:
 
   nginx:
     image: nginx:alpine
-    # THIS LINE IS THE ONLY THING THAT MATTERS FOR RENDER
     ports:
-      - "80:80"                     # ← change 8080 → 80
+      - "80:80"
     volumes:
       - .:/var/www
       - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
@@ -31,7 +30,6 @@ services:
       MYSQL_ROOT_PASSWORD: password
     networks:
       - my-network
-    # Render requires a healthcheck on databases or it can time out
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s

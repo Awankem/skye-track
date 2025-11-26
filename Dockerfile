@@ -1,6 +1,6 @@
 FROM php:8.3-fpm-alpine
 
-# ONE single RUN command – no line-continuation parsing issues
+# Install dependencies
 RUN apk add --no-cache nginx gettext sqlite sqlite-dev libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev oniguruma-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd zip pdo_sqlite pdo_mysql bcmath \
@@ -34,10 +34,11 @@ RUN php artisan config:cache && php artisan route:cache && php artisan view:cach
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
     && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-# Nginx config template
-COPY docker/nginx/nginx.conf /etc/nginx/http.d/default.conf.template
+# Copy nginx config
+COPY docker/nginx/nginx.conf /etc/nginx/http.d/default.conf
 
-EXPOSE 8080
+# Render uses PORT environment variable (default 10000)
+EXPOSE 10000
 
-# Start PHP-FPM + Nginx
-CMD ["/bin/sh", "-c", "envsubst '$PORT' < /etc/nginx/http.d/default.conf.template > /etc/nginx/http.d/default.conf && php-fpm -D && nginx -g 'daemon off;'"]
+# Start PHP-FPM in background and Nginx in foreground with port substitution
+CMD ["/bin/sh", "-c", "sed -i \"s/listen 80/listen ${PORT:-10000}/g\" /etc/nginx/http.d/default.conf && php-fpm & nginx -g 'daemon off;'"]
