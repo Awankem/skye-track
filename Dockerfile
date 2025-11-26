@@ -1,41 +1,45 @@
-# Use the official PHP image as a base
-FROM php:8.3-fpm
+# syntax = docker/dockerfile:1.7
+FROM php:8.3-fpm-alpine
 
-# Set working directory
+# Install nginx + gettext (for envsubst) + all required libs
+RUN apk add --no-cache \
+    nginx \
+    gettext \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    zip \
+    libzip-dev \
+    oniguruma-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd zip pdo_mysql bcmath
+
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 WORKDIR /var/www
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libzip-dev \
-    unzip \
-    git \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd zip pdo pdo_mysql
+# Dependencies
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
-# Install Node.js and npm
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
-
-# Copy the composer.lock and composer.json files
-COPY composer.lock composer.json ./
-
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# Install PHP dependencies
-RUN composer install --no-scripts --no-autoloader
-
-# Copy the rest of the application code
+# Code
 COPY . .
 
-# Generate optimized autoload files
-RUN composer dump-autoload --optimize
+# Finish composer + Laravel cache
+RUN composer dump-autoload --optimize --classmap-authoritative
+RUN php artisan config:cache && php artisan route:cache && php artisan view:cache
 
-# Expose the port
-EXPOSE 9000
-EXPOSE 80
-# Start PHP-FPM server
-CMD ["php-fpm"]
+# Permissions
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
+# Nginx config as template
+COPY docker/nginx/nginx.conf /etc/nginx/http.d/default.conf.template
+
+EXPOSE 8080
+
+# Final start command – this is the gold standard in 2025
+CMD ["/bin/sh", "-c", \
+     "envsubst '$PORT' < /etc/nginx/http.d/default.conf.template > /etc/nginx/http.d/default.conf && \
+      php-fpm -D && \
+      nginx -g 'daemon off;'"]
